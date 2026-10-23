@@ -23,6 +23,11 @@
       <version>1.0.1</version>
     </dependency>
     <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>2.22.4</version>
@@ -43,8 +48,6 @@
         <version>7.26.0</version>
         <configuration>
           <generatorName>java</generatorName>
-          <!-- overrides generatedAnnotation.mustache, to avoid @jakarta.annotation.Generated -->
-          <templateDirectory>${project.basedir}/src/main/openapi-templates</templateDirectory>
           <library>native</library>
           <generateApis>false</generateApis>
           <generateApiTests>false</generateApiTests>
