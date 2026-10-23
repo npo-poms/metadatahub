@@ -13,11 +13,83 @@
   </description>
   <dependencies>
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.21</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.22.4</version>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <version>5.14.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <!-- generates the domain objects (models only) from the metadatahub openapi spec -->
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>7.26.0</version>
+        <configuration>
+          <generatorName>java</generatorName>
+          <!-- overrides generatedAnnotation.mustache, to avoid @jakarta.annotation.Generated -->
+          <templateDirectory>${project.basedir}/src/main/openapi-templates</templateDirectory>
+          <library>native</library>
+          <generateApis>false</generateApis>
+          <generateApiTests>false</generateApiTests>
+          <generateApiDocumentation>false</generateApiDocumentation>
+          <generateModels>true</generateModels>
+          <generateModelTests>false</generateModelTests>
+          <generateModelDocumentation>false</generateModelDocumentation>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <configOptions>
+            <useJakartaEe>true</useJakartaEe>
+            <useJspecify>true</useJspecify>
+            <supportUrlQuery>false</supportUrlQuery>
+            <openApiNullable>false</openApiNullable>
+            <annotationLibrary>none</annotationLibrary>
+            <dateLibrary>java8</dateLibrary>
+            <hideGenerationTimestamp>true</hideGenerationTimestamp>
+            <serializationLibrary>jackson</serializationLibrary>
+            <sourceFolder>src/main/java</sourceFolder>
+          </configOptions>
+        </configuration>
+        <executions>
+         <!-- <execution>
+            <id>metadatahub</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>https://api.metadatahub.bijnpo.nl/docs-json</inputSpec>
+              <modelPackage>nl.vpro.npo.metadatahub.domain</modelPackage>
+            </configuration>
+          </execution>-->
+          <execution>
+            <id>mediaavailability</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/mediaavailability.yaml</inputSpec>
+              <modelPackage>nl.vpro.npo.metadatahub.mediaavailability.domain</modelPackage>
+              <output>${project.build.directory}/generated-sources/openapi-mediaavailability</output>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
 
