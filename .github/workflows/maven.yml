@@ -17,13 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest ]
-        java: [ 8 ]
-        # also check (once) on latest (no java 8 for macos)
-        include:
-          - os: macos-latest
-            java: 25
-          - os: ubuntu-latest
-            java: 25
+        java: [ 25 ]
     env:
       MAVEN_ARGS: '--no-transfer-progress --color always'
       MAVEN_TARGET: 'package'
@@ -41,7 +35,7 @@ jobs:
           server-password-env-var: CENTRAL_PASSWORD
           gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
       - name: Set Maven Target
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.java == '8' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.java == '25' }}
         run: echo "MAVEN_TARGET=deploy" >> $GITHUB_ENV
       - uses: stCarolas/setup-maven@v5
         # https://github.com/mavenplugins/central-publishing-maven-plugin/issues/78
