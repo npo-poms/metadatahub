@@ -1,0 +1,495 @@
+openapi: 3.0.3
+info:
+  title: Media Availability Service
+  description: Media Availability Service
+  version: 0.0.53
+
+servers:
+  - url: https://availability.${HostedZoneName}
+
+paths:
+  /v1/{platform}:
+    get:
+      operationId: ListMediaAvailability
+      summary: Get list of media availability information
+      tags:
+        - mediaAvailability
+      security:
+        - cognitoOAuth:
+            - Fn::Sub: ${AWS::StackName}/read
+      parameters:
+        - name: platform
+          in: path
+          description: Platform to fetch media availability for
+          required: true
+          example: extra
+          schema:
+            type: string
+        - name: exclusiveStartKey
+          in: query
+          description: |
+            The primary key of the first item that this operation will evaluate.
+            Use the value that was returned for LastEvaluatedKey in the previous operation.
+
+            The format is '<platform>,<prid>'
+          required: false
+          schema:
+            type: string
+            example: tvvod,POW_03384486
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+            example: 50
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListMediaAvailability.Arn}/invocations"
+      responses:
+        200:
+          description: List of media availability information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAvailabilityListResponse'
+  /v1/product/{prid}:
+    get:
+      operationId: ListMediaAvailabilityProductRestrictions
+      summary: Get list of media availability product restrictions
+      tags:
+        - mediaAvailability
+      security:
+        - cognitoOAuth:
+            - Fn::Sub: ${AWS::StackName}/read
+      parameters:
+        - name: prid
+          in: path
+          description: prid of the product
+          required: true
+          schema:
+            type: string
+            example: AT_2060644
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListRestrictionProduct.Arn}/invocations"
+      responses:
+        200:
+          description: List of media availability products restrictions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAvailabilityProductsRestrictionsListResponse'
+  /v1/{platform}/{prid}:
+    get:
+      operationId: GetMediaAvailability
+      summary: Fetch media availability information for given program
+      tags:
+        - mediaAvailability
+      security:
+        - cognitoOAuth:
+            - Fn::Sub: ${AWS::StackName}/read
+      parameters:
+        - name: platform
+          in: path
+          description: Platform to fetch media availability for
+          required: true
+          example: extra
+          schema:
+            type: string
+        - name: prid
+          in: path
+          description: Program Identifier to fetch media availability information for
+          required: true
+          example: POW_03384486
+          schema:
+            type: string
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetMediaAvailability.Arn}/invocations"
+      responses:
+        200:
+          description: Media availability information
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/MediaAvailabilityInfo'
+        404:
+          description: Program with given PRID not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      success:
+                        example: false
+                      error:
+                        example: 'Program with given PRID not found'
+
+components:
+  securitySchemes:
+    cognitoOAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: cognito_user_pools
+      x-amazon-apigateway-authorizer:
+        type: cognito_user_pools
+        providerARNs:
+          - Fn::Sub: arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}
+
+  schemas:
+    Response:
+      description: The standard response wrapper
+      properties:
+        success:
+          type: boolean
+          description: Indication whether the API call succeeded
+          example: true
+        error:
+          type: string
+          description: An error message in case the API call failed. Otherwise this is empty
+          example: ''
+        data:
+          type: object
+          description: The response type
+
+    MediaAvailabilityInfo:
+      description: Availability information
+      required:
+        - prid
+        - platform
+        - source
+        - created
+        - lastUpdated
+      properties:
+        prid:
+          type: string
+          example: POW_03384486
+        platform:
+          type: string
+          example: npo-fvod
+          enum:
+            - npo-fvod
+            - npo-svod
+            - distri-nl
+            - distri-be
+            - npo-od
+        broadcasters:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example: [ "EO", "BNN" ]
+        revoke:
+          type: object
+          nullable: true
+          properties:
+            revoked:
+              type: boolean
+              example: true
+            transmissionId:
+              type: string
+              nullable: true
+              example: '9667234324668'
+            revokedTime:
+              type: string
+              nullable: true
+              format: date-time
+              example: '2023-01-27T15:14:05.000Z'
+        isStreamable:
+          type: boolean
+          description: Indicates, based on the medialocation existence, whether an item is playable.
+          nullable: true
+          example: true
+        isDownloadable:
+          type: boolean
+          description: Indicates whether an item can technically be downloaded (download to go).
+          example: false
+        availabilityPeriods:
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaAvailabilityPeriod'
+        notify:
+          type: object
+          nullable: true
+          properties:
+            notified:
+              type: boolean
+              example: true
+            notifiedTime:
+              type: string
+              example: '2023-03-01T09:00:53.000Z'
+        predictionCurrentlyIncluded:
+          description: Indicates whether the item is currently included in voorspel.xml. Must be a 0 or 1, rather than a boolean, for technical reasons.
+          type: number
+          example: 0
+          minimum: 0
+          maximum: 1
+        prediction:
+          type: object
+          nullable: true
+          properties:
+            stopped:
+              description: Indicates whether this item was marked as stopped in voorspel.xml
+              type: boolean
+              example: false
+            start:
+              description: Indicates the first time this item was present in voorspel.xml
+              type: string
+              example: '2023-02-23T12:13:01.000Z'
+            stop:
+              description: Indicates the last time this item was present in voorspel.xml
+              type: string
+              example: '2023-02-23T12:13:01.000Z'
+            predictedTime:
+              description: Indicates when this item was last processed in relation to voorspel.xml
+              type: string
+              example: '2023-02-23T12:13:01.000Z'
+            code:
+              type: string
+              example: 'some_code'
+        replaySource:
+          type: string
+          example: 'vmv'
+        replayTimestamp:
+          type: string
+          example: '2023-02-23T12:13:01.000Z'
+        created:
+          type: string
+          format: date-time
+          example: '2020-01-13T16:10:53.000Z'
+        lastUpdated:
+          type: string
+          format: date-time
+          example: '2020-01-13T16:10:53.000Z'
+        source:
+          type: string
+          example: 'won'
+        ageRestriction:
+          oneOf:
+            - type: integer
+              enum: [ 16, 18 ]
+            - type: 'null'
+          example: 16
+
+    CatalogItem:
+      type: object
+      properties:
+        prid:
+          type: string
+          example: 'POW_02934251'
+        publicationTimestamp:
+          type: string
+          format: date-time
+          example: '2024-03-28T15:42:21.995+01:00'
+        version:
+          type: integer
+          example: 4
+        mediaType:
+          type: string
+          enum:
+            - video
+          example: video
+        contentType:
+          type: string
+          enum:
+            - episode
+          example: episode
+        title:
+          type: string
+          example: 'Raad eens hoeveel ik van je hou'
+        displayTitle:
+          type: string
+          example: 'Raad eens hoeveel ik van je hou'
+        originalTitle:
+          type: string
+          example: 'Guess how much I love you'
+        synopsis:
+          type: object
+          properties:
+            short:
+              type: string
+              example: 'Kleine Veldmuis wil herfstblaadjes van een heel bijzondere boom hebben voor haar verzameling, maar ze weet niet precies waar die is.'
+            long:
+              type: string
+              example: 'Kleine Veldmuis wil herfstblaadjes van een heel bijzondere boom hebben voor haar verzameling, maar ze weet niet precies waar die is. Hazeltje besluit voor de zekerheid de weg te markeren, maar dat had hij beter niet met eikels kunnen doen...'
+        genre:
+          type: object
+          properties:
+            primary:
+              type: string
+              example: 'Jeugd'
+            secondary:
+              type: string
+              example: 'Animatie'
+        rating:
+          type: object
+          properties:
+            system:
+              type: string
+              example: 'NICAM'
+            classification:
+              type: string
+              example: '6'
+            advisories:
+              type: array
+              items:
+                type: string
+                example: 'G'
+        broadcasters:
+          type: array
+          items:
+            type: string
+            example: 'BV'
+        productionCountry:
+          type: string
+          example: 'AUS'
+        productionYear:
+          type: integer
+          example: 2015
+        episodeNumber:
+          type: integer
+          example: 11
+        castAndCrew:
+          type: array
+          items:
+            type: object
+            properties:
+              person:
+                type: object
+                properties:
+                  givenName:
+                    type: string
+                    example: 'Eva'
+                  familyName:
+                    type: string
+                    example: 'Jinek'
+                  id:
+                    type: integer
+                    example: 1076709938517
+              function:
+                type: string
+                example: 'Host'
+              role:
+                type: string
+                example: 'Hazeltje'
+        relations:
+          type: object
+          properties:
+            series:
+              type: object
+              properties:
+                prid:
+                  type: string
+                  example: 'POW_00890603'
+            season:
+              type: object
+              properties:
+                prid:
+                  type: string
+                  example: 'POW_02934240'
+        source:
+          type: string
+          example: 'WONVPP'
+
+    MediaAvailabilityPeriod:
+      description: Media Availability Period
+      required:
+        - start
+        - stop
+        - geoIpRestriction
+      properties:
+        transmissionId:
+          type: string
+          example: '324324932668'
+        onDemandTransmissionId:
+          type: string
+          example: '324324932668'
+        publicationId:
+          type: string
+          example: 'test_abc'
+        geoIpRestriction:
+          type: string
+          example: 'NL'
+          enum:
+            - NL
+            - NLBES
+            - NLALL
+            - BENELUX
+            - EU
+            - EUALL
+            - EUBES
+            - EUROPE
+            - WR
+        drm:
+          type: boolean
+          example: true
+        start:
+          type: string
+          nullable: true
+          format: date-time
+          example: '2023-01-27T15:14:05.000Z'
+        stop:
+          type: string
+          nullable: true
+          format: date-time
+          example: '2023-01-31T15:14:05.000Z'
+        restrictedTime:
+          type: string
+          nullable: true
+          example: '2020-01-13T16:10:53Z'
+        isStreamable:
+          type: boolean
+          description: Indicates, based on the medialocation streamstatus, whether an item is playable based on DRM.
+          example: true
+        downloadAllowed:
+          type: boolean
+          description: Indicates whether the rights on this availability period allow the item to be downloaded (download to go).
+          example: false
+        revoked:
+          type: boolean
+          description: Indicates whether the availability period is revoked
+          example: true
+    MediaAvailabilityListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              type: object
+              properties:
+                lastEvaluatedKey:
+                  type: string
+                  description: Last evaluated key, use as exclusiveStartKey in the next operation
+                  example: tvvod,POW_03384486
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MediaAvailabilityInfo'
+
+
+    MediaAvailabilityProductsRestrictionsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/MediaAvailabilityInfo'
