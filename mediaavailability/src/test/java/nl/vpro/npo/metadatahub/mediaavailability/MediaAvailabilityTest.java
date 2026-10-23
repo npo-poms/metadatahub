@@ -26,7 +26,7 @@ class MediaAvailabilityTest {
             "ageRestriction": 6,
             "broadcasters": ["VPRO", "EO"],
             "availabilityPeriods": [{
-             "availabilityPeriodId": "1"
+
             }
 
             ],
