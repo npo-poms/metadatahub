@@ -1,0 +1,60 @@
+= metadatahub
+:toc:
+
+image:https://github.com/npo-poms/metadatahub/actions/workflows/maven.yml/badge.svg?[Build Status,link=https://github.com/npo-poms/metadatahub/actions/workflows/maven.yml]
+
+Client library for the NPO MetadataHub. Also, some mapping code back to the POMS domain model.
+
+== Modules
+
+=== mediaavailability
+
+Java bindings (Jackson) for the _Media Availability Service_.
+
+The domain classes are generated with the https://openapi-generator.tech/[openapi-generator-maven-plugin] from the OpenAPI spec in link:mediaavailability/src/main/resources/mediaavailability.yaml[`mediaavailability.yaml`]. Only models are generated (no API client), into the package `nl.vpro.npo.metadatahub.mediaavailability.domain`, e.g. `MediaAvailabilityInfo`, `MediaAvailabilityPeriod` and `MediaAvailabilityListResponse`.
+
+The spec describes these endpoints:
+
+[cols="1,3"]
+|===
+| `GET /v1/\{platform}` | List media availability for a platform (paged with `exclusiveStartKey` and `limit`)
+| `GET /v1/\{platform}/\{prid}` | Media availability for one program on a platform
+| `GET /v1/product/\{prid}` | Product restrictions for a program
+|===
+
+Example:
+
+[source,java]
+----
+MediaAvailabilityInfo info = new ObjectMapper()
+    .readerFor(MediaAvailabilityInfo.class)
+    .readValue(json);
+----
+
+== Usage
+
+[source,xml]
+----
+<dependency>
+  <groupId>nl.vpro.npo.metadatahub</groupId>
+  <artifactId>mediaavailability</artifactId>
+  <version>0.1-SNAPSHOT</version>
+</dependency>
+----
+
+== Building
+
+Requires Java 25.
+
+[source,bash]
+----
+mvn package
+----
+
+== Releasing
+
+Snapshots are deployed to Maven Central by the `build` workflow on every push to `main`. A release is made by manually triggering the link:.github/workflows/release.yml[`release`] workflow, which runs `release:prepare release:perform`.
+
+== License
+
+https://www.apache.org/licenses/LICENSE-2.0.txt[Apache License, Version 2.0]
