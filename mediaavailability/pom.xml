@@ -4,8 +4,9 @@
   <parent>
     <groupId>nl.vpro.npo.metadatahub</groupId>
     <artifactId>metadatahub-parent</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.1-SNAPSHOT</version>
   </parent>
+  <name>metadatahubavailability-json-bindings</name>
   <artifactId>mediaavailability</artifactId>
   <packaging>jar</packaging>
   <description>
