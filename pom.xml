@@ -73,7 +73,7 @@
     <dependency>
       <groupId>nl.vpro.shared</groupId>
       <artifactId>vpro-shared-test</artifactId>
-      <version>5.18.0</version>
+      <version>5.19.0</version>
       <scope>test</scope>
     </dependency>
 
@@ -199,4 +199,3 @@
   </profiles>
 
 </project>
-
