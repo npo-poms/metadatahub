@@ -4,7 +4,7 @@
   <groupId>nl.vpro.npo.metadatahub</groupId>
   <artifactId>metadatahub-parent</artifactId>
   <packaging>pom</packaging>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <name>metadatahub-parent</name>
   <description>
     Client library for the NPO MetadataHub. Also, some mapping code back to the poms domain model.
@@ -46,7 +46,7 @@
     <url>https://github.com/npo-poms/metadatahub</url>
     <connection>scm:git:${project.scm.url}</connection>
     <developerConnection>scm:git:${project.scm.url}</developerConnection>
-    <tag>HEAD</tag>
+    <tag>metadatahub-parent-0.1</tag>
   </scm>
 
   <modules>
