@@ -41,13 +41,15 @@ public class ClientTest {
         ApiClient client = new ApiClient();
         // only scheme and host; the generated api adds the /v1/... paths itself
         client.updateBaseUri(URI.create(property("availability_endpoint_baseUrl")).resolve("/").toString().replaceAll("/$", ""));
-        client.setObjectMapper(MediaAvailabilityModule.createObjectMapper());
+        //client.setObjectMapper(MediaAvailabilityModule.createObjectMapper());
 
         client.setRequestInterceptor(new HttpCredentials(
             URI.create(property("availability_sso").replaceAll("/$", "") + "/oauth2/token"),
             property("availability_username"),
             property("availability_password")
         ));
+        // shows the token, so the logged curl can be run as is
+        client.setResponseInterceptor(Curl.interceptor(true, log::info)::accept);
         return client;
     }
     MediaAvailabilityApi api = new MediaAvailabilityApi(client());
@@ -64,6 +66,9 @@ public class ClientTest {
     void listMediaAvailabilityProductRestrictions() throws ApiException {
 
         log.info(api.listMediaAvailabilityProductRestrictions("POW_05986176"));
+
+        //log.info(api.listMediaAvailabilityProductRestrictions("""POW_05986176"));
+
     }
 
 }
