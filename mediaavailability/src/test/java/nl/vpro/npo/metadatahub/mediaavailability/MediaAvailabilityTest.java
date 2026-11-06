@@ -14,7 +14,7 @@ class MediaAvailabilityTest {
 
 
     @Test
-    void testMediaAvailability() throws JsonProcessingException {
+    void mediaAvailability() throws JsonProcessingException {
         String example = """
             {
             "prid": "NPO_1",
