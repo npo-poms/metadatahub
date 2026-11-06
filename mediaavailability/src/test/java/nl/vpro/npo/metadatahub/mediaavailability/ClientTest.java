@@ -65,7 +65,7 @@ public class ClientTest {
     @Test
     void listMediaAvailabilityProductRestrictions() throws ApiException {
 
-        log.info(api.listMediaAvailabilityProductRestrictions("POW_05986176"));
+        log.info(api.listMediaAvailabilityProductRestrictions("KN_1692982"));
 
         //log.info(api.listMediaAvailabilityProductRestrictions("""POW_05986176"));
 

@@ -3,8 +3,8 @@ package nl.vpro.npo.metadatahub.mediaavailability;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
+import nl.vpro.npo.metadatahub.mediaavailability.domain.MediaAvailabilityInfo;
 import nl.vpro.npo.metadatahub.mediaavailability.domain.MediaAvailabilityPeriod;
 
 import static nl.vpro.npo.metadatahub.mediaavailability.domain.MediaAvailabilityPeriod.GeoIpRestrictionEnum.*;
@@ -37,13 +37,37 @@ class MediaAvailabilityModuleTest {
     }
 
     @Test
-    void unknown() {
-        assertThrows(InvalidFormatException.class, () -> read("\"MARS\""));
+    void unknown() throws Exception {
+        assertNull(read("\"MARS\""));
+    }
+
+    /**
+     * Platforms not in the spec (like 'hergebruik') are mapped to null, and must not make the complete message fail.
+     */
+    @Test
+    void unknownPlatform() throws Exception {
+        MediaAvailabilityInfo info = mapper.readValue("""
+            {
+              "prid": "POW_03384486",
+              "platform": "hergebruik",
+              "availabilityPeriods": [ { "geoIpRestriction": "NL" } ]
+            }
+            """, MediaAvailabilityInfo.class);
+        assertNull(info.getPlatform());
+        assertEquals("POW_03384486", info.getPrid());
+        assertEquals(NL, info.getAvailabilityPeriods().getFirst().getGeoIpRestriction());
+    }
+
+    @Test
+    void knownPlatform() throws Exception {
+        MediaAvailabilityInfo info = mapper.readValue("{\"prid\": \"POW_1\", \"platform\": \"npo-od\"}", MediaAvailabilityInfo.class);
+        assertEquals(MediaAvailabilityInfo.PlatformEnum.NPO_OD, info.getPlatform());
     }
 
     @Test
     void serviceLoader() throws Exception {
         ObjectMapper m = ApiClient.createDefaultObjectMapper().findAndRegisterModules();
         assertEquals(WR, m.readValue("{\"geoIpRestriction\": \"WERELD\"}", MediaAvailabilityPeriod.class).getGeoIpRestriction());
+        assertNull(m.readValue("{\"prid\": \"POW_1\", \"platform\": \"hergebruik\"}", MediaAvailabilityInfo.class).getPlatform());
     }
 }

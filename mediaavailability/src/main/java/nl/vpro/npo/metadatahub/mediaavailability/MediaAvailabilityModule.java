@@ -1,5 +1,7 @@
 package nl.vpro.npo.metadatahub.mediaavailability;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.Serial;
 import java.util.Map;
@@ -7,6 +9,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
@@ -17,12 +20,17 @@ import nl.vpro.npo.metadatahub.mediaavailability.domain.MediaAvailabilityPeriod.
  * <p>
  * E.g. {@code geoIpRestriction} is sometimes sent as {@code WERELD}, where {@code WR} is meant.
  * <p>
+ * Enum values which are not in the spec at all (e.g. platform {@code hergebruik}) are logged as a warning, and mapped to {@code null},
+ * so they don't make the complete message fail.
+ * <p>
  * Registered via {@code META-INF/services}, so {@link ObjectMapper#findAndRegisterModules()} picks it up too.
  */
+@Slf4j
 public class MediaAvailabilityModule extends SimpleModule {
 
     static final Map<String, GeoIpRestrictionEnum> GEO_IP_RESTRICTION_ALIASES = Map.of(
-        "WERELD", GeoIpRestrictionEnum.WR
+        "WERELD", GeoIpRestrictionEnum.WR,
+        "NL ALL", GeoIpRestrictionEnum.NLALL
     );
     @Serial
     private static final long serialVersionUID = 4496088846591320188L;
@@ -30,6 +38,13 @@ public class MediaAvailabilityModule extends SimpleModule {
     public MediaAvailabilityModule() {
         super(MediaAvailabilityModule.class.getSimpleName());
         addDeserializer(GeoIpRestrictionEnum.class, new GeoIpRestrictionDeserializer());
+
+    }
+
+    @Override
+    public void setupModule(SetupContext context) {
+        super.setupModule(context);
+        context.addDeserializationProblemHandler(new UnknownEnumValuesAsNull());
     }
 
     /**
@@ -37,6 +52,39 @@ public class MediaAvailabilityModule extends SimpleModule {
      */
     public static ObjectMapper createObjectMapper() {
         return ApiClient.createDefaultObjectMapper().registerModule(new MediaAvailabilityModule());
+    }
+
+    /**
+     * Maps unknown enum values to {@code null}, with a warning.
+     * <p>
+     * The generated enums have a {@code @JsonCreator fromValue}, which throws an {@link IllegalArgumentException} for unknown values. That
+     * arrives at {@link #handleInstantiationProblem}. Enums without such a creator (and {@link GeoIpRestrictionDeserializer}) arrive at
+     * {@link #handleWeirdStringValue}.
+     */
+    static class UnknownEnumValuesAsNull extends DeserializationProblemHandler {
+
+        @Override
+        public Object handleInstantiationProblem(DeserializationContext ctxt, Class<?> instClass, Object argument, Throwable t) {
+            if (instClass.isEnum()) {
+                return unknown(ctxt, instClass, argument);
+            }
+            return NOT_HANDLED;
+        }
+
+        @Override
+        public Object handleWeirdStringValue(DeserializationContext ctxt, Class<?> targetType, String valueToConvert, String failureMsg) {
+            if (targetType.isEnum()) {
+                return unknown(ctxt, targetType, valueToConvert);
+            }
+            return NOT_HANDLED;
+        }
+
+        private static Object unknown(DeserializationContext ctxt, Class<?> enumClass, Object value) {
+            final JsonParser parser = ctxt.getParser();
+            log.warn("Unknown value '{}' for {} at {}. Mapped to null",
+                value, enumClass.getSimpleName(), parser == null ? null : parser.getParsingContext().pathAsPointer());
+            return null;
+        }
     }
 
     static class GeoIpRestrictionDeserializer extends StdScalarDeserializer<GeoIpRestrictionEnum> {
