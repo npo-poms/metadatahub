@@ -41,6 +41,8 @@ public class ClientTest {
         ApiClient client = new ApiClient();
         // only scheme and host; the generated api adds the /v1/... paths itself
         client.updateBaseUri(URI.create(property("availability_endpoint_baseUrl")).resolve("/").toString().replaceAll("/$", ""));
+        client.setObjectMapper(MediaAvailabilityModule.createObjectMapper());
+
         client.setRequestInterceptor(new HttpCredentials(
             URI.create(property("availability_sso").replaceAll("/$", "") + "/oauth2/token"),
             property("availability_username"),
@@ -54,14 +56,14 @@ public class ClientTest {
     @Test
     void getMediaAvailability() throws ApiException {
 
-        log.info(api.getMediaAvailability("NPO_FVOD", "VPRO_1129292"));
+        log.info(api.getMediaAvailability("NPO_FVOD", "POW_05986176"));
     }
 
 
     @Test
     void listMediaAvailabilityProductRestrictions() throws ApiException {
 
-        log.info(api.listMediaAvailabilityProductRestrictions("WO_NTR_20372008"));
+        log.info(api.listMediaAvailabilityProductRestrictions("POW_05986176"));
     }
 
 }
